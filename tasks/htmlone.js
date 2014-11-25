@@ -1,3 +1,6 @@
+#!/usr/bin/env node
+// -*- js -*-
+
 /*
  * htmlone
  * https://github.com/amfe/or.htmlone
@@ -9,9 +12,14 @@
 'use strict';
 
 var path = require('path');
+
 var cheerio = require('cheerio');
 var uglify = require('uglify-js');
 var less = require('less');
+var fsutil = require('./fsutil');
+var url = require('url');
+var http = require('http');
+
 
 module.exports = function(grunt) {
 
@@ -20,59 +28,104 @@ module.exports = function(grunt) {
       var $ = cheerio.load(htmlFrag);
       
       // deal js
+      var todownloadJs = 0;
+      var downloadedJs = 0;
+      var todownloadCss = 0;
+      var downloadedCss = 0;
+      var isJsDone = false;
+      var isCssDone = false;
+
+      var __minifyAndReplace = function ($js, jscon) {
+          if (options.jsminify) {
+            jscon = uglify.minify(jscon, {
+              fromString: true,
+              mangle: true
+            }).code;
+          }
+          $js.removeAttr(options.keyattr)
+              .removeAttr('src')
+              .html(jscon);
+      };
+      var __checkJsDone = function () {
+          if (downloadedJs === todownloadJs) {
+              isJsDone = true;
+              __checkAllDone();
+          }
+      };
+
+      var __checkAllDone = function () {
+        if (isJsDone && isCssDone) {
+          cb && cb($.html());
+        }
+      };
+
       var js = $('script['+options.keyattr+']');
       js.each(function (i, el) {
+          var $js = $(this);
           var src = $(this).attr('src');
+
           var oldCon = $(this).html();
           var newCon = '\n';
           if (grunt.file.isFile(src)) {
             newCon += grunt.file.read(src);
-          }
-          newCon += (oldCon + '\n');
+            __minifyAndReplace($js, newCon);
+          } else if (/^http/.test(src)) {
+            //download & replace
+            todownloadJs ++;
+            var destPath = path.join('temp', url.parse(src).pathname);
 
-          //mimify
-          if (options.jsminify) {
-              newCon = uglify.minify(newCon, {
-                fromString: true,
-                mangle: true
-              }).code;
-          }
-
-          $(this).removeAttr(options.keyattr).html(newCon);
-          if (!/^http/.test(src)) {
-              $(this).removeAttr('src');
+            fsutil.download(src, destPath, function ($js, destPath) {
+              return function () {
+                console.log('"'+destPath+'" downloaded!');
+                downloadedJs ++;
+                __minifyAndReplace($js, grunt.file.read(destPath));
+                __checkJsDone();
+              }
+            }($js, destPath));
           }
       });
 
       // deal css
       var css = $('link['+options.keyattr+']');
       var _i = 0;
-      var _checkAllDone = function () {
+      var _checkCssDone = function () {
         if (_i === css.length) {
-          // cb() write file to dest/
-          cb && cb($.html());
+          isCssDone = true;
+          __checkAllDone();
         }
       };
-      css.each(function (i, el) {
-          var href = $(this).attr('href');
-          var newCon = '\n';
-          var me = this;
-          if (grunt.file.isFile(href)) {
-            newCon += (grunt.file.read(href) + '\n');
-          }
-
+      var __cssMinifyAndReplace = function ($css, cssCon) {
           if (options.cssminify) {
-              less.render(newCon, {compress:true}, function (e, output) {
+              less.render(cssCon, {compress:true}, function (e, output) {
                   var style = $('<style>'+output+'</style>');
-                  $(me).replaceWith(style);
+                  $css.replaceWith(style);
                   _i ++;
-                  _checkAllDone();
+                  _checkCssDone();
               });
           } else {
-            var style = $('<style>'+newCon+'</style>');
-            $(this).replaceWith(style);
+            var style = $('<style>'+cssCon+'</style>');
+            $css.replaceWith(style);
             _i ++;
-            _checkAllDone();
+            _checkCssDone();
+          }
+      };
+
+      css.each(function (i, el) {
+          var href = $(this).attr('href'); 
+          var newCon = '\n';
+          var me = this;
+          var $css = $(this);
+          if (grunt.file.isFile(href)) {
+              newCon += (grunt.file.read(href) + '\n');
+              __cssMinifyAndReplace($css, newCon);
+          } else if (/^http/i.test(href)) { 
+              var tempDestFile = path.join('temp', url.parse(href).pathname); 
+              fsutil.download(href, tempDestFile, function ($css, tempDestFile) {
+                return function () {
+                    console.log('"'+tempDestFile+'" downloaded!');
+                    __cssMinifyAndReplace($css, grunt.file.read(tempDestFile));
+                }
+              }($css, tempDestFile));
           }
       });
   };
@@ -87,6 +140,8 @@ module.exports = function(grunt) {
       cssminify: true,
       jsminify: true
     });
+
+    var done = this.async();
 
     // Iterate over all specified file groups.
     this.files.forEach(function(f) {
@@ -105,16 +160,17 @@ module.exports = function(grunt) {
         var destPath = f.dest + basename;
         var srcContent = grunt.file.read(filepath);
 
-
         dealScripts(srcContent, options, function (html) {
           grunt.file.write(destPath, html);
-          grunt.log.ok('One-Request File "' + destPath + '" created.');
+          grunt.log.ok('>> One-Request File "' + destPath + '" created.');
+          fsutil.rmdirSync('./temp/');
+          grunt.log.ok('>> cleanup::temp dir "temp/" is removed!');
+          done();
         });
 
       });
-
-
     });
+
   });
 
 };

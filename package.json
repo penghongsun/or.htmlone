@@ -1,7 +1,7 @@
 {
   "name": "grunt-contrib-htmlone",
   "description": "Combo js|css to html",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "homepage": "https://github.com/amfe/or.htmlone",
   "author": {
     "name": "岑安",
@@ -37,8 +37,9 @@
   },
   "dependencies": {
     "cheerio": "~0.17.0",
-    "uglify-js": "~2.4.0",
-    "less": "~1.7.3"
+    "download": "^3.1.2",
+    "less": "~1.7.3",
+    "uglify-js": "~2.4.0"
   },
   "peerDependencies": {
     "grunt": "~0.4.5"
