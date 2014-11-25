@@ -1,4 +1,4 @@
-# grunt-contrib-htmlone
+# grunt-contrib-htmlone @0.0.4
 
 > Combo js|css to html
 
@@ -97,4 +97,4 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
-+ 0.0.1
++ 0.0.4

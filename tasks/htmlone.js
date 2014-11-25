@@ -28,8 +28,8 @@ module.exports = function(grunt) {
       var $ = cheerio.load(htmlFrag);
       
       // deal js
-      var todownloadJs = 0;
-      var downloadedJs = 0;
+      var todoJs = 0;
+      var doneJs = 0;
       var todownloadCss = 0;
       var downloadedCss = 0;
       var isJsDone = false;
@@ -47,7 +47,7 @@ module.exports = function(grunt) {
               .html(jscon);
       };
       var __checkJsDone = function () {
-          if (downloadedJs === todownloadJs) {
+          if (doneJs === js.length) {
               isJsDone = true;
               __checkAllDone();
           }
@@ -69,16 +69,17 @@ module.exports = function(grunt) {
           if (grunt.file.isFile(src)) {
             newCon += grunt.file.read(src);
             __minifyAndReplace($js, newCon);
+            doneJs ++;
+            __checkJsDone();
           } else if (/^http/.test(src)) {
             //download & replace
-            todownloadJs ++;
             var destPath = path.join('temp', url.parse(src).pathname);
 
             fsutil.download(src, destPath, function ($js, destPath) {
               return function () {
                 console.log('"'+destPath+'" downloaded!');
-                downloadedJs ++;
                 __minifyAndReplace($js, grunt.file.read(destPath));
+                doneJs ++;
                 __checkJsDone();
               }
             }($js, destPath));
