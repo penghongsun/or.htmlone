@@ -59,6 +59,13 @@ module.exports = function(grunt) {
         }
       };
 
+      var __uniqueId = function () {
+        var i = 0;
+        return function () {
+          return i ++;
+        }
+      }()
+
       var js = $('script['+options.keyattr+']');
       js.each(function (i, el) {
           var $js = $(this);
@@ -73,7 +80,12 @@ module.exports = function(grunt) {
             __checkJsDone();
           } else if (/^http/.test(src)) {
             //download & replace
-            var destPath = path.join('temp', url.parse(src).pathname);
+            if (/\?\?/.test(src)) {
+                //cdn combo
+                var destPath = path.join('temp', 'cdn_combo_'+__uniqueId() + '.js');
+              } else {
+                var destPath = path.join('temp', url.parse(src).pathname); 
+              }
 
             fsutil.download(src, destPath, function ($js, destPath) {
               return function () {
@@ -119,8 +131,14 @@ module.exports = function(grunt) {
           if (grunt.file.isFile(href)) {
               newCon += (grunt.file.read(href) + '\n');
               __cssMinifyAndReplace($css, newCon);
-          } else if (/^http/i.test(href)) { 
-              var tempDestFile = path.join('temp', url.parse(href).pathname); 
+          } else if (/^http/i.test(href)) {
+              if (/\?\?/.test(href)) {
+                //cdn combo
+                var tempDestFile = path.join('temp', 'cdn_combo_'+__uniqueId() + '.css');
+              } else {
+                var tempDestFile = path.join('temp', url.parse(href).pathname); 
+              }
+              
               fsutil.download(href, tempDestFile, function ($css, tempDestFile) {
                 return function () {
                     console.log('"'+tempDestFile+'" downloaded!');

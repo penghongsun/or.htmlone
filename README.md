@@ -1,4 +1,4 @@
-# grunt-contrib-htmlone @0.0.4
+# grunt-contrib-htmlone @0.0.5
 
 > Combo js|css to html
 
@@ -97,4 +97,12 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
-+ 0.0.4
++ 0.0.5
+
+## MTB 特色
+
+- 支持cdn combo 的url parse 和下载 比如 `http://xxx.tbcdn.cn/mtb/??a.js,b.js`
+- 选择性配置是否需要combo到html
+- dynamic 路径匹配
+- 自动下载http连接的css 和 js
+- 支持自动压缩所有css 和 js 然后再combo
