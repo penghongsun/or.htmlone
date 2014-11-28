@@ -25,7 +25,7 @@ module.exports = function(grunt) {
 
   var dealScripts = function (htmlFrag, options, cb) {
       //console.log(htmlFrag, options);
-      var $ = cheerio.load(htmlFrag);
+      var $ = cheerio.load(htmlFrag, {decodeEntities: false, normalizeWhitespace: false});
       
       // deal js
       var todoJs = 0;
@@ -36,15 +36,18 @@ module.exports = function(grunt) {
       var isCssDone = false;
 
       var __minifyAndReplace = function ($js, jscon) {
+
           if (options.jsminify) {
             jscon = uglify.minify(jscon, {
               fromString: true,
               mangle: true
             }).code;
           }
-          $js.removeAttr(options.keyattr)
-              .removeAttr('src')
-              .html(jscon);
+
+          // $js.removeAttr(options.keyattr)
+          //     .removeAttr('src')
+          //     .html(jscon);
+          $js.replaceWith('<script>'+jscon+'</script>')
       };
       var __checkJsDone = function () {
           if (doneJs === js.length) {

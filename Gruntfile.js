@@ -32,8 +32,8 @@ module.exports = function(grunt) {
     htmlone: {
       default_options: {
         options: {
-          // jsminify: false,
-          // cssminify: false
+           jsminify: true,
+          cssminify: false
         },
         files: [
               {

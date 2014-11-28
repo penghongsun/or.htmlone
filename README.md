@@ -1,4 +1,4 @@
-# grunt-contrib-htmlone @0.0.5
+# grunt-contrib-htmlone @0.0.6
 
 > Combo js|css to html
 
@@ -106,3 +106,7 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 - dynamic 路径匹配
 - 自动下载http连接的css 和 js
 - 支持自动压缩所有css 和 js 然后再combo
+
++ 0.0.6
+
+- 修复jsstring自动encode导致js不能正常解析的问题
