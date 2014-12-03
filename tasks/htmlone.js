@@ -23,7 +23,7 @@ var http = require('http');
 
 module.exports = function(grunt) {
 
-  var dealScripts = function (htmlFrag, options, cb) {
+  var dealScripts = function (htmlpath, htmlFrag, options, cb) {
       //console.log(htmlFrag, options);
       var $ = cheerio.load(htmlFrag, {decodeEntities: false, normalizeWhitespace: false});
       
@@ -70,36 +70,50 @@ module.exports = function(grunt) {
       }()
 
       var js = $('script['+options.keyattr+']');
-      js.each(function (i, el) {
-          var $js = $(this);
-          var src = $(this).attr('src');
+      if (js.length === 0) {
+        isJsDone = true;
+        __checkAllDone();
+      } else {
+        js.each(function (i, el) {
+            var $js = $(this);
+            var src = $(this).attr('src');
 
-          var oldCon = $(this).html();
-          var newCon = '\n';
-          if (grunt.file.isFile(src)) {
-            newCon += grunt.file.read(src);
-            __minifyAndReplace($js, newCon);
-            doneJs ++;
-            __checkJsDone();
-          } else if (/^http/.test(src)) {
-            //download & replace
-            if (/\?\?/.test(src)) {
-                //cdn combo
-                var destPath = path.join('temp', 'cdn_combo_'+__uniqueId() + '.js');
-              } else {
-                var destPath = path.join('temp', url.parse(src).pathname); 
-              }
+            var oldCon = $(this).html();
+            var newCon = '\n';
 
-            fsutil.download(src, destPath, function ($js, destPath) {
-              return function () {
-                console.log('"'+destPath+'" downloaded!');
-                __minifyAndReplace($js, grunt.file.read(destPath));
+            if (!/^http/.test(src)) {
+              var jssrc = path.join(path.dirname(htmlpath), src);
+              if (grunt.file.isFile(jssrc)) { 
+                newCon += grunt.file.read(jssrc);
+                __minifyAndReplace($js, newCon);
                 doneJs ++;
                 __checkJsDone();
+              } else {
+                grunt.log.error('"'+src+'" in "' + htmlpath + '" is an invalid file or url!');
               }
-            }($js, destPath));
-          }
-      });
+            } else {
+              //download & replace
+              if (/\?\?/.test(src)) {
+                  //cdn combo
+                  var destPath = path.join('temp', 'cdn_combo_'+__uniqueId() + '.js');
+                } else {
+                  var destPath = path.join('temp', url.parse(src).pathname); 
+                }
+
+              fsutil.download(src, destPath, function ($js, destPath) {
+                return function () {
+                  console.log('"'+destPath+'" downloaded!');
+                  __minifyAndReplace($js, grunt.file.read(destPath));
+                  doneJs ++;
+                  __checkJsDone();
+                }
+              }($js, destPath));
+            }
+
+        });
+      }
+
+      
 
       // deal css
       var css = $('link['+options.keyattr+']');
@@ -126,30 +140,43 @@ module.exports = function(grunt) {
           }
       };
 
-      css.each(function (i, el) {
-          var href = $(this).attr('href'); 
-          var newCon = '\n';
-          var me = this;
-          var $css = $(this);
-          if (grunt.file.isFile(href)) {
-              newCon += (grunt.file.read(href) + '\n');
-              __cssMinifyAndReplace($css, newCon);
-          } else if (/^http/i.test(href)) {
-              if (/\?\?/.test(href)) {
-                //cdn combo
-                var tempDestFile = path.join('temp', 'cdn_combo_'+__uniqueId() + '.css');
+      if (css.length === 0) {
+        isCssDone = true;
+        __checkAllDone();
+      } else {
+        css.each(function (i, el) {
+            var href = $(this).attr('href'); 
+            var newCon = '\n';
+            var me = this;
+            var $css = $(this);
+
+            if (!/^http/.test(href)) {
+              var csshref = path.join(path.dirname(htmlpath), href);
+              if (grunt.file.isFile(csshref)) {
+                newCon += (grunt.file.read(csshref) + '\n');
+                __cssMinifyAndReplace($css, newCon);
               } else {
-                var tempDestFile = path.join('temp', url.parse(href).pathname); 
+                grunt.log.error('"'+href+'" in "' + htmlpath + '" is an invalid file or url!');
               }
-              
-              fsutil.download(href, tempDestFile, function ($css, tempDestFile) {
-                return function () {
-                    console.log('"'+tempDestFile+'" downloaded!');
-                    __cssMinifyAndReplace($css, grunt.file.read(tempDestFile));
+            } else {
+              if (/\?\?/.test(href)) {
+                  //cdn combo
+                  var tempDestFile = path.join('temp', 'cdn_combo_'+__uniqueId() + '.css');
+                } else {
+                  var tempDestFile = path.join('temp', url.parse(href).pathname); 
                 }
-              }($css, tempDestFile));
-          }
-      });
+                
+                fsutil.download(href, tempDestFile, function ($css, tempDestFile) {
+                  return function () {
+                      console.log('"'+tempDestFile+'" downloaded!');
+                      __cssMinifyAndReplace($css, grunt.file.read(tempDestFile));
+                  }
+                }($css, tempDestFile));
+            }
+
+        });
+      }
+      
   };
 
   // Please see the Grunt documentation for more information regarding task
@@ -164,6 +191,8 @@ module.exports = function(grunt) {
     });
 
     var done = this.async();
+    var me = this;
+    var doneHtml = 0;
 
     // Iterate over all specified file groups.
     this.files.forEach(function(f) {
@@ -176,18 +205,22 @@ module.exports = function(grunt) {
         } else {
           return true;
         }
-      }).map(function(filepath) {
+      }).map(function(filepath) { 
         // Read file source.
         var basename = path.basename(filepath);
         var destPath = f.dest + basename;
         var srcContent = grunt.file.read(filepath);
-
-        dealScripts(srcContent, options, function (html) {
+        
+        dealScripts(filepath, srcContent, options, function (html) {
           grunt.file.write(destPath, html);
           grunt.log.ok('>> One-Request File "' + destPath + '" created.');
-          fsutil.rmdirSync('./temp/');
-          grunt.log.ok('>> cleanup::temp dir "temp/" is removed!');
-          done();
+          doneHtml ++;
+
+          if (doneHtml === f.src.length) {
+            fsutil.rmdirSync('./temp/');
+            grunt.log.ok('>> cleanup::temp dir "temp/" is removed!');
+            done();  
+          }
         });
 
       });

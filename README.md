@@ -1,4 +1,4 @@
-# grunt-contrib-htmlone @0.0.6
+# grunt-contrib-htmlone @0.0.7
 
 > Combo js|css to html
 
@@ -95,9 +95,6 @@ grunt.initConfig({
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
-## Release History
-
-+ 0.0.5
 
 ## MTB 特色
 
@@ -107,6 +104,12 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 - 自动下载http连接的css 和 js
 - 支持自动压缩所有css 和 js 然后再combo
 
-+ 0.0.6
 
-- 修复jsstring自动encode导致js不能正常解析的问题
+## Release History
+
++ 0.0.5
++ 0.0.6
+  - 修复jsstring自动encode导致js不能正常解析的问题
++ 0.0.7
+  - 修复js和css必须都有文件引入才能正常执行的问题
+  - 修复多个html同时执行只处理第一个的问题
