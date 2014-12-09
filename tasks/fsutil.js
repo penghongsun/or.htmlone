@@ -110,7 +110,7 @@ var download = function (url, dest, cb) {
     !fs.existsSync(dirname) && mkdirSync(dirname);
 
       var file = fs.createWriteStream(dest);
-      var request = http.get(url, function(response) { console.log(response)
+      var request = http.get(url, function(response) {
         response.pipe(file);
         file.on('finish', function() {
           file.close(cb);  // close() is async, call cb after close completes.

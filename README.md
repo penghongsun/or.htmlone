@@ -1,6 +1,8 @@
-# grunt-contrib-htmlone @0.0.7
+# grunt-contrib-htmlone @0.0.8
 
 > Combo js|css to html
+
+if you use `gulp`, there is also a gulp-plugin [`gulp-htmlone`](https://www.npmjs.org/package/gulp-htmlone)
 
 ## Getting Started
 This plugin requires Grunt `~0.4.5`
