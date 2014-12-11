@@ -1,4 +1,4 @@
-# grunt-contrib-htmlone @0.0.8
+# grunt-contrib-htmlone @0.0.9
 
 > Combo js|css to html
 
@@ -115,3 +115,5 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 + 0.0.7
   - 修复js和css必须都有文件引入才能正常执行的问题
   - 修复多个html同时执行只处理第一个的问题
++ 0.0.9
+  - 修复 windows `mkdirp` 错误
